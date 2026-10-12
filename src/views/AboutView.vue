@@ -1,151 +1,216 @@
 <script setup>
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import about1 from '../assets/images/about1.png'
 import about2 from '../assets/images/about2.png'
 import AppNavBar from '../components/AppNavBar.vue'
-import AppFooter from '../components/AppFooter.vue'
+import AboutFooter from '../components/AboutFooter.vue'
 
 const { t } = useI18n()
+
+/* ------------------------------------------------------------------
+   比例：正文 : footer = 4 : 1
+   正文高度是内容撑开的（不是固定值），纯 CSS 拿不到它的实际像素，
+   所以这里用一小段 JS 把 footer 的 min-height 同步为正文高度的 1/4。
+   用 ResizeObserver 监听，窗口缩放或内容变化时自动重算。
+   ------------------------------------------------------------------ */
+const mainRef = ref(null)
+const footerSlotRef = ref(null)
+let observer = null
+
+function syncFooterHeight() {
+  const mainEl = mainRef.value
+  const footerEl = footerSlotRef.value
+  if (!mainEl || !footerEl) return
+  footerEl.style.minHeight = `${Math.round(mainEl.offsetHeight / 4)}px`
+}
+
+onMounted(async () => {
+  await nextTick()
+  syncFooterHeight()
+
+  if (typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(syncFooterHeight)
+    if (mainRef.value) observer.observe(mainRef.value)
+  } else {
+    window.addEventListener('resize', syncFooterHeight)
+  }
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', syncFooterHeight)
+})
 </script>
 
 <template>
   <main class="about-page">
-    <AppNavBar />
+    <!-- ① 左侧黑色栏：宽 : 右侧 = 1 : 3，纵跨整个高度 -->
+    <aside class="about-sidebar">
+      <span class="sidebar-title">About</span>
+    </aside>
 
-    <section class="about-stage">
-      <!-- 模块一：Designer introduction 标题 -->
-      <h2 class="about-designer-title">Designer introduction</h2>
+    <!-- ② 右侧正文 + ③ footer：高 = 4 : 1 -->
+    <div class="about-content">
+      <AppNavBar />
 
-      <!-- 模块一：设计师介绍文字 -->
-      <div class="designer-copy">
-        <p>{{ t('about.storyP1') }}</p>
-        <p>{{ t('about.storyP2') }}</p>
-        <p>{{ t('about.storyP3') }}</p>
-      </div>
+      <section class="about-main" ref="mainRef">
+        <div class="main-grid">
+          <!-- 正文左栏 -->
+          <div class="col-left">
+            <h2 class="designer-title">Designer introduction</h2>
 
-      <!-- 模块一：About 装饰文字 -->
-      <span class="about-title">About</span>
+            <div class="designer-copy">
+              <p>{{ t('about.storyP1') }}</p>
+              <p>{{ t('about.storyP2') }}</p>
+              <p>{{ t('about.storyP3') }}</p>
+            </div>
 
-      <!-- 模块二：左侧人像 -->
-      <div class="about-portrait">
-        <img :src="about1" alt="Designer portrait" />
-      </div>
+            <div class="about-portrait">
+              <img :src="about1" alt="Designer portrait" />
+            </div>
+          </div>
 
-      <!-- 模块二：右侧 Press 标题 -->
-      <h2 class="press-introduction">
-        <span>14</span> Best Bridal Designers in Asia
-      </h2>
+          <!-- 正文右栏 -->
+          <div class="col-right">
+            <span class="about-title">About</span>
 
-      <!-- 模块二：右侧 Press 文字 -->
-      <div class="press-copy">
-        <p>{{ t('about.storyP4') }}</p>
-        <p>{{ t('about.storyP5') }}</p>
-      </div>
+            <h2 class="press-title">
+              <span>14</span> Best Bridal Designers in Asia
+            </h2>
 
-      <!-- 模块二：右侧工作室图片 -->
-      <div class="about-studio">
-        <img :src="about2" alt="Studio" />
-      </div>
+            <div class="press-copy">
+              <p>{{ t('about.storyP4') }}</p>
+              <p>{{ t('about.storyP5') }}</p>
+            </div>
 
-      <!-- 联系方式 -->
-      <div class="contact-list">
-        <div class="contact-item">
-          <span class="contact-label">Rednote :</span>
-          <span class="contact-value">{{ t('about.rednote') }}</span>
+            <div class="about-studio">
+              <img :src="about2" alt="Studio" />
+            </div>
+          </div>
         </div>
-        <div class="contact-item">
-          <span class="contact-label">Instagram :</span>
-          <span class="contact-value">{{ t('about.instagram') }}</span>
-        </div>
-        <div class="contact-item">
-          <span class="contact-label">Email :</span>
-          <span class="contact-value">{{ t('about.email') }}</span>
-        </div>
-        <div class="contact-item">
-          <span class="contact-label">Tel :</span>
-          <span class="contact-value">{{ t('about.tel') }}</span>
-        </div>
-        <div class="contact-item">
-          <span class="contact-label">Address :</span>
-          <span class="contact-value">{{ t('about.address') }}</span>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <AppFooter theme="transparent" />
+      <AboutFooter />
+    </div>
   </main>
 </template>
 
 <style scoped>
-/* ===== 页面容器 ===== */
+/* ============================================================
+   页面骨架：两列网格
+   列宽比例 → 黑色左栏 : 右侧内容 = 1 : 3
+   ============================================================ */
 .about-page {
-  width: 100%;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  min-height: 100vh;
   background: var(--cream);
 }
 
-/* ===== 舞台：固定高度，所有子元素绝对定位 ===== */
-.about-stage {
-  height: calc(2394.3 * var(--unit));
-  background: var(--cream);
+/* ===== ① 黑色左栏（纵跨全高） ===== */
+.about-sidebar {
+  background: #000;
+  padding: calc(52 * var(--unit)) calc(44 * var(--unit));
 }
 
-/* ===== 模块一：Designer introduction 标题 ===== */
-.about-designer-title {
-  position: absolute;
-  top: calc(244 * var(--unit));
-  left: calc(112.2 * var(--unit));
+.sidebar-title {
+  display: block;
+  font-family: Georgia, 'Times New Roman', 'Noto Serif SC', serif;
+  font-size: clamp(30px, 3.1vw, 60px);
+  font-weight: 700;
+  color: #8f8f8f;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   ② 右侧：正文 + ③ footer
+   高度比例 → 正文 : footer = 4 : 1
+   用 flex-grow 4 / 1 实现；内容超出时各自撑开，页面可滚动
+   ============================================================ */
+.about-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+}
+
+.about-main {
+  flex: 4 0 auto;
+}
+
+/* footer 槽位：min-height 由 JS 同步为正文高度的 1/4（正文 : footer = 4 : 1） */
+.about-footer-slot {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.about-footer-slot > * {
+  flex: 1 0 auto;
+}
+
+/* ===== 导航栏在窄列内的位置修正 ===== */
+.about-content :deep(.app-navbar) {
+  flex: none;
+  margin-top: calc(38 * var(--unit));
+  margin-bottom: calc(44 * var(--unit));
+}
+
+.about-content :deep(.navbar-nav-left) {
+  left: calc(64 * var(--unit));
+}
+
+.about-content :deep(.navbar-nav-right) {
+  right: calc(64 * var(--unit));
+}
+
+.about-content :deep(.logo) {
+  width: calc(96 * var(--unit));
+}
+
+/* ===== 正文内部：左右两栏 ===== */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.95fr;
+  column-gap: 9%;
+  align-items: start;
+  padding: 0 calc(64 * var(--unit)) calc(64 * var(--unit));
+}
+
+.col-left,
+.col-right {
+  min-width: 0;
+}
+
+/* ===== 左栏：Designer introduction ===== */
+.designer-title {
   font-family: var(--font-script);
-  font-size: calc(47.6266 * var(--unit));
+  font-size: calc(30 * var(--unit));
   font-weight: 400;
   color: var(--blue);
-  line-height: 1;
-  letter-spacing: calc(2.38 * var(--unit));
+  line-height: 1.1;
+  letter-spacing: calc(1.4 * var(--unit));
+  margin: 0 0 calc(14 * var(--unit));
   white-space: nowrap;
-  margin: 0;
-}
-
-/* ===== 模块一：设计师介绍文字 ===== */
-.designer-copy {
-  position: absolute;
-  top: calc(317.9 * var(--unit));
-  left: calc(114.9 * var(--unit));
-  width: calc(688 * var(--unit));
 }
 
 .designer-copy p {
   font-family: var(--font-sans);
-  font-size: calc(17 * var(--unit));
-  line-height: calc(25 * var(--unit));
-  letter-spacing: calc(1.36 * var(--unit));
+  font-size: calc(15 * var(--unit));
+  line-height: calc(24 * var(--unit));
+  letter-spacing: calc(0.8 * var(--unit));
   color: var(--color-text);
-  margin: 0 0 calc(24 * var(--unit)) 0;
+  margin: 0 0 calc(18 * var(--unit));
 }
 
 .designer-copy p:last-child {
   margin-bottom: 0;
 }
 
-/* ===== 模块一：About 装饰文字 ===== */
-.about-title {
-  position: absolute;
-  top: calc(260 * var(--unit));
-  left: calc(1542.9 * var(--unit));
-  font-family: var(--font-script);
-  font-size: calc(117 * var(--unit));
-  font-weight: 400;
-  color: var(--color-text);
-  letter-spacing: 0.02em;
-  line-height: 0.6;
-  margin: 0;
-}
-
-/* ===== 模块二：左侧人像 ===== */
 .about-portrait {
-  position: absolute;
-  top: calc(948.21 * var(--unit));
-  left: calc(107.24 * var(--unit));
-  width: calc(677 * var(--unit));
+  margin-top: calc(36 * var(--unit));
 }
 
 .about-portrait img {
@@ -154,55 +219,47 @@ const { t } = useI18n()
   display: block;
 }
 
-/* ===== 模块二：右侧 Press 标题 ===== */
-.press-introduction {
-  position: absolute;
-  top: calc(739.5 * var(--unit));
-  left: calc(1074.96 * var(--unit));
+/* ===== 右栏：About + Press ===== */
+.about-title {
+  display: block;
   font-family: var(--font-script);
-  font-size: calc(47.6266 * var(--unit));
+  font-size: calc(84 * var(--unit));
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 0.8;
+  margin: 0 0 calc(150 * var(--unit));
+}
+
+.press-title {
+  font-family: var(--font-script);
+  font-size: calc(30 * var(--unit));
   font-weight: 400;
   color: var(--blue);
-  line-height: 1;
-  letter-spacing: calc(2.38 * var(--unit));
-  white-space: nowrap;
-  margin: 0;
+  line-height: 1.1;
+  letter-spacing: calc(1.4 * var(--unit));
+  margin: 0 0 calc(14 * var(--unit));
 }
 
-.press-introduction span {
-  font-size: calc(71 * var(--unit));
+.press-title span {
+  font-size: calc(44 * var(--unit));
   letter-spacing: 0;
-  -webkit-text-stroke: calc(1 * var(--unit)) var(--cream);
-  paint-order: fill stroke;
-}
-
-/* ===== 模块二：右侧 Press 文字 ===== */
-.press-copy {
-  position: absolute;
-  top: calc(816 * var(--unit));
-  left: calc(1074.5 * var(--unit));
-  width: calc(575 * var(--unit));
 }
 
 .press-copy p {
   font-family: var(--font-sans);
-  font-size: calc(17 * var(--unit));
-  line-height: calc(25 * var(--unit));
-  letter-spacing: calc(1.36 * var(--unit));
+  font-size: calc(15 * var(--unit));
+  line-height: calc(24 * var(--unit));
+  letter-spacing: calc(0.8 * var(--unit));
   color: var(--color-text-light);
-  margin: 0 0 calc(24 * var(--unit)) 0;
+  margin: 0 0 calc(18 * var(--unit));
 }
 
 .press-copy p:last-child {
   margin-bottom: 0;
 }
 
-/* ===== 模块二：右侧工作室图片 ===== */
 .about-studio {
-  position: absolute;
-  top: calc(1212.24 * var(--unit));
-  left: calc(1074.73 * var(--unit));
-  width: calc(729.6 * var(--unit));
+  margin-top: calc(36 * var(--unit));
 }
 
 .about-studio img {
@@ -211,122 +268,80 @@ const { t } = useI18n()
   display: block;
 }
 
-/* ===== 联系方式 ===== */
-.contact-list {
-  position: absolute;
-  top: calc(1950 * var(--unit));
-  left: calc(115.2 * var(--unit));
-  width: calc(780 * var(--unit));
-}
-
-.contact-item {
-  display: flex;
-  gap: calc(45 * var(--unit));
-  margin-bottom: calc(45 * var(--unit));
-}
-
-.contact-item:last-child {
-  margin-bottom: 0;
-}
-
-.contact-label {
-  width: calc(85 * var(--unit));
-  font-family: var(--font-script);
-  font-size: calc(25 * var(--unit));
-  font-weight: 500;
-  color: var(--blue);
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.contact-value {
-  font-family: var(--font-sans);
-  font-size: calc(17 * var(--unit));
-  color: var(--color-text);
-  line-height: 1.5;
-  letter-spacing: calc(2.55 * var(--unit));
-}
-
-/* ===== 响应式：移动端切换为 flex 布局 ===== */
-@media (max-width: 767px) {
-  .about-stage {
-    height: auto;
-    position: static;
-    display: flex;
-    flex-direction: column;
-    padding: calc(80 * var(--unit)) calc(40 * var(--unit));
-    gap: calc(48 * var(--unit));
+/* ============================================================
+   响应式：窄屏改为单列，黑栏变成顶部色块
+   ============================================================ */
+@media (max-width: 1024px) {
+  .about-page {
+    grid-template-columns: 1fr;
   }
 
-  .about-designer-title,
-  .designer-copy,
-  .about-title,
-  .about-portrait,
-  .press-introduction,
-  .press-copy,
-  .about-studio,
-  .contact-list {
-    position: static;
-    top: auto;
-    left: auto;
-    width: auto;
+  .about-sidebar {
+    padding: 36px 32px;
   }
 
-  .about-designer-title {
-    font-size: 1.75rem;
+  .sidebar-title {
+    font-size: 2.4rem;
   }
 
-  .designer-copy {
-    width: 100%;
+  .main-grid {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
+    padding: 0 32px 48px;
   }
 
-  .designer-copy p {
+  .about-content :deep(.navbar-nav-left) {
+    left: 32px;
+  }
+
+  .about-content :deep(.navbar-nav-right) {
+    right: 32px;
+  }
+
+  .designer-title,
+  .press-title {
+    font-size: 1.5rem;
+    white-space: normal;
+  }
+
+  .designer-copy p,
+  .press-copy p {
     font-size: 0.9rem;
-    line-height: 1.6;
+    line-height: 1.65;
   }
 
   .about-title {
-    font-size: 4rem;
-    text-align: center;
+    font-size: 3.5rem;
+    margin-bottom: 48px;
+  }
+}
+
+@media (max-width: 767px) {
+  .about-sidebar {
+    padding: 28px 24px;
   }
 
-  .about-portrait {
-    width: 100%;
+  .sidebar-title {
+    font-size: 2rem;
   }
 
-  .press-introduction {
-    font-size: 1.75rem;
+  .about-content :deep(.app-navbar) {
+    margin-top: 20px;
+    margin-bottom: 24px;
   }
 
-  .press-copy {
-    width: 100%;
+  .main-grid {
+    padding: 0 24px 36px;
+    row-gap: 36px;
   }
 
-  .press-copy p {
-    font-size: 0.9rem;
-    line-height: 1.6;
+  .about-title {
+    font-size: 2.75rem;
+    margin-bottom: 32px;
   }
 
-  .about-studio {
-    width: 100%;
-  }
-
-  .contact-list {
-    width: 100%;
-  }
-
-  .contact-item {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .contact-label {
-    width: auto;
-    font-size: 1.1rem;
-  }
-
-  .contact-value {
-    font-size: 0.9rem;
+  .press-title span {
+    font-size: 1.9rem;
   }
 }
 </style>

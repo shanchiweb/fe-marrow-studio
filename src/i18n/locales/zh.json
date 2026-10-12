@@ -24,7 +24,15 @@
     "rednote": "{'@'}MarrowStudio",
     "instagram": "{'@'}marrow.studio",
     "email": "hello{'@'}marrowstudio.com",
-    "tel": "+86 21 6288 8888"
+    "tel": "+86 21 6288 8888",
+    "series1": "系列1",
+    "series2": "系列2",
+    "series3": "系列3",
+    "footerAbout": "About #1",
+    "footerBoutique": "Our Boutique #1",
+    "footerStockists": "Stockists",
+    "subscribePlaceholder": "name@email.com",
+    "subscribeNote": "留下您的邮箱，方便我们与您取得联系"
   },
   "common": {
     "language": "语言",

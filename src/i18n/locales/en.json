@@ -24,7 +24,15 @@
     "rednote": "蔓若Marrow",
     "instagram": "marrowbridal",
     "email": "marrowbridal{'@'}126.com",
-    "tel": "+8615281064451"
+    "tel": "+8615281064451",
+    "series1": "Series 1",
+    "series2": "Series 2",
+    "series3": "Series 3",
+    "footerAbout": "About #1",
+    "footerBoutique": "Our Boutique #1",
+    "footerStockists": "Stockists",
+    "subscribePlaceholder": "name@email.com",
+    "subscribeNote": "Submit your email address so we can get in touch with you."
   },
   "common": {
     "language": "Language",
